@@ -28,3 +28,41 @@ function annotate_admin_settings() {
   $form['#submit'][] = 'annotate_admin_settings_submit';
   return system_settings_form($form);
 }
+
+/**
+ * Process annotation settings submission.
+ */
+function annotate_admin_settings_submit($form, $form_state) {
+  foreach ($form_state['values']['annotate_node_types'] as $key => $value) {
+    if (!$value) {
+      $instance = field_info_instance('node', 'annotation', $key);
+      if (!empty($instance)) {
+        field_delete_instance($instance);
+        watchdog('Annotation', 'Deleted annotation field from content type: %key', ['%key' => $key]);
+      }
+    }
+    else {
+      $instance = field_info_instance('node', 'annotation', $key);
+      if (empty($instance)) {
+        $instance = [
+          'field_name' => 'annotation',
+          'entity_type' => 'node',
+          'bundle' => $key,
+          'label' => t('Annotation'),
+          'widget_type' => 'text_textarea_with_summary',
+          'settings' => ['display_summary' => TRUE],
+          'display' => [
+            'default' => [
+              'type' => 'text_default',
+            ],
+          ],
+          'teaser' => [
+            'type' => 'text_summary_or_timmed',
+          ],
+        ];
+      }
+      $instance = field_create_instance($instance);
+      watchdog('Annotation', 'Added annotation field to content type: %key', ['%key' => $key]);
+    }
+  }
+}
